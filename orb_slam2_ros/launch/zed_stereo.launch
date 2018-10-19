@@ -1,0 +1,46 @@
+<launch>
+
+  <arg name="use_px2" default="true"/>
+  <arg name="username" default="nvidia"/>
+
+  <group if="$(arg use_px2)">
+    <machine name="tegraB" address="tegraB" user="nvidia" env-loader="~/EUFSA_ws/devel/env.sh" default="true"/>
+  </group>
+
+  <node pkg="orb_slam2_ros" type="Stereo" name="orb_slam2_ros" args="/home/$(arg username)/EUFSA_ws/src/ORB_SLAM2/orb_slam2_lib/Vocabulary/ORBvoc.bin /home/$(arg username)/EUFSA_ws/src/ORB_SLAM2/orb_slam2_ros/config/zed/zed_376p.yaml False" cwd="node" output="screen">
+      <remap from="/camera/left/image_raw" to="/left/masked" />
+      <remap from="/camera/right/image_raw" to="/right/masked" />
+      <!-- tf settings -->
+      <rosparam>
+          twoD: true
+          publish_tf: false
+          map_frame: false
+          map_frame_adjusted: odom
+          camera_frame: base_footprint
+          base_frame: base_link
+          waypoint_z_threshold: 1.5
+      </rosparam>
+  </node>
+
+
+  <node name="camera_mask_left" output="screen" pkg="camera_mask" type="camera_mask_node">
+    <param name="ImageWidth" value="672"/>
+    <param name="ImageHeigth" value="376"/>
+    <param name="Framerate" value="100.0"/>
+    <param name="FilterFile" value="/home/$(arg username)/EUFSA_ws/src/eufsa_drivers/camera_mask/src/zed_left_sim_mask"/>
+    <param name="InputTopic" value="/zed/left/image_rect_color"/>
+    <param name="OutputTopic" value="/left/masked"/>
+  </node>
+
+  <node name="camera_mask_right" output="screen" pkg="camera_mask" type="camera_mask_node">
+    <param name="ImageWidth" value="672"/>
+    <param name="ImageHeigth" value="376"/>
+    <param name="Framerate" value="100.0"/>
+    <param name="FilterFile" value="/home/$(arg username)/EUFSA_ws/src/eufsa_drivers/camera_mask/src/zed_left_sim_mask"/>
+    <param name="InputTopic" value="/zed/right/image_rect_color"/>
+    <param name="OutputTopic" value="/right/masked"/>
+  </node>
+
+  <node name="trajectory_smoothing" output="screen" pkg="orb_slam2_ros" type="smoothing.py"/>
+
+</launch>
